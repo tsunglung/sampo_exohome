@@ -1,0 +1,12 @@
+{
+  "domain": "sampo_exohome",
+  "name": "Sampo Home Plus",
+  "config_flow": true,
+  "version": "0.0.1",
+  "codeowners": ["@tsunglung"],
+  "config_flow": true,
+  "documentation": "https://github.com/tsunglung/sampo_exohome",
+  "iot_class": "cloud_polling",
+  "dependencies": ["websocket_api"],
+  "loggers": ["sampo_exohome"]
+}
