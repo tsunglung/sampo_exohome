@@ -89,7 +89,11 @@ class ExohomeClimate(ExohomeEntity, ClimateEntity):
     @property
     def supported_features(self) -> int:
         """Return the list of supported features."""
-        feature = ClimateEntityFeature.TARGET_TEMPERATURE
+        feature = (
+            ClimateEntityFeature.TARGET_TEMPERATURE
+            | ClimateEntityFeature.TURN_OFF
+            | ClimateEntityFeature.TURN_ON
+        )
         status = self.status
 
         if (status.get(CLIMATE_SWING_VERTICAL, None) or
@@ -394,3 +398,14 @@ class ExohomeClimate(ExohomeEntity, ClimateEntity):
     def target_temperature_step(self) -> float:
         """ Return temperature step """
         return CLIMATE_TEMPERATURE_STEP
+
+    async def async_turn_on(self) -> None:
+        """Turn the entity on."""
+        await self.client.set_device(self.device, CLIMATE_POWER, 1)
+        await self.coordinator.async_request_refresh()
+
+    async def async_turn_off(self) -> None:
+        """Turn the entity off."""
+        await self.client.set_device(self.device, CLIMATE_POWER, 0)
+        await self.coordinator.async_request_refresh()
+
