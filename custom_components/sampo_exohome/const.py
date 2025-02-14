@@ -27,7 +27,7 @@ REFRESH_TOKEN_EXPIRY_TIME = timedelta(days=30)
 
 CONF_REFRESH_TOKEN = "refresh_token"
 CONF_USER_ID = "user_id"
-CONF_TOKEN_EXPIRES_IN = "token_expires_in"
+CONF_TOKEN_EXPIRES_AT = "token_expires_at"
 
 SENSOR_BATTERY = "low_battery"
 SENSOR_DOOR = "door"

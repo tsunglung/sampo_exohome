@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from http import HTTPStatus
 from typing import Any, TypeVar, cast
 from uuid import uuid4
@@ -49,6 +49,9 @@ class Client:
         self._session = session
         self._session_name = session_name or uuid4().hex
         self._default_context = None
+        self._email: str = ""
+        self._password: str = ""
+        self._expires_at = 0
         self.id: str = ""
         self.token: str = ""
         self.ws = None
@@ -56,7 +59,7 @@ class Client:
         self._ws_id = 0
 
     async def async_set_token(
-        self, email: str, password: str, token: str
+        self, email: str, password: str, token: str, expires_at: int
     ) -> None:
         """Authenticate via username and password.
 
@@ -66,6 +69,9 @@ class Client:
             password: The account password.
 
         """
+        self._email = email
+        self._password = password
+        self._expires_at = expires_at
         self.token = token
 
     async def async_authenticate_from_credentials(
@@ -94,6 +100,9 @@ class Client:
 
         self.id = auth_response.id
         self.token = auth_response.token
+        self._expires_at = int(
+            datetime.now().timestamp() + timedelta(days=29).total_seconds()
+        )
 
     async def async_request(
         self,
@@ -130,7 +139,10 @@ class Client:
         data: dict[str, Any] = {}
 
         async with session.request(method, url, headers=headers, json=json_data) as resp:
-            data = await resp.json()
+            try:
+                data = await resp.json()
+            except Exception as e:
+                LOGGER.error(f"json {resp} {e}")
 
             try:
                 resp.raise_for_status()
@@ -234,9 +246,11 @@ class Client:
             await self.ws.send(json.dumps(msg))
             #if msg.get("device"):
             #    await asyncio.sleep(.1)
-            text = await self.ws.recv()
             try:
+                text = await self.ws.recv()
                 response = json.loads(text)
+            except websockets.exceptions.ConnectionClosed as err:
+                msg = f"Error while parsing response from {msg}: {err}"
             except Exception as err:
                 msg = f"Error while parsing response from {msg}: {err}"
                 raise RequestError(msg) from err
@@ -304,6 +318,8 @@ class Client:
         """
         devices = []
         new_devices = {}
+        if self._expires_at - int(datetime.now().timestamp()) <= 0:
+            self.async_authenticate_from_credentials(self._email, self._password)
 
         async with websockets.connect(f"{WSS_BASE}/phone", ssl=self._default_context, close_timeout=3) as websocket:
             self.ws = websocket
@@ -359,6 +375,16 @@ class Client:
             self._ws_id = self._ws_id + 1
             await self._ws_write(msg)
 
+    def get_login_info(self):
+        """ Get info of login
+
+        Returns:
+            email, password, expires_at
+
+        """
+
+        return self._email, self._password, self._expires_at
+
 async def async_get_client_with_credentials(
     email: str,
     password: str,
@@ -388,6 +414,7 @@ async def async_get_client_with_token(
     email: str,
     password: str,
     token: str,
+    expires_at: int,
     *,
     session: ClientSession | None = None,
     session_name: str | None = None,
@@ -407,5 +434,5 @@ async def async_get_client_with_token(
 
     """
     client = Client(session=session, session_name=session_name)
-    await client.async_set_token(email, password, token)
+    await client.async_set_token(email, password, token, expires_at)
     return client

@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
-from datetime import datetime, timedelta
 
 import voluptuous as vol
 
@@ -15,7 +14,7 @@ from homeassistant.core import HomeAssistant
 
 from .core.errors import InvalidCredentialsError, ExohomeError
 from .util import async_get_client_with_credentials
-from .const import CONF_USER_ID, DOMAIN, LOGGER, CONF_TOKEN_EXPIRES_IN
+from .const import CONF_USER_ID, DOMAIN, LOGGER
 
 AUTH_SCHEMA = vol.Schema(
     {
@@ -135,9 +134,6 @@ class ExohomeFlowHandler(ConfigFlow, domain=DOMAIN):
                 CONF_USERNAME: user_input[CONF_USERNAME],
                 CONF_PASSWORD: user_input[CONF_PASSWORD],
                 CONF_USER_ID: credentials_validation_result.id,
-                CONF_TOKEN: credentials_validation_result.token,
-                CONF_TOKEN_EXPIRES_IN: int(
-                    datetime.now().timestamp() + timedelta(days=30).total_seconds()
-                )
+                CONF_TOKEN: credentials_validation_result.token
             },
         )
